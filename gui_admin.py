@@ -37,7 +37,46 @@ class ModifyBalanceDialog(simpledialog.Dialog):
         except ValueError:
             messagebox.showwarning("error", "please enter a valid number.", parent=self)
 
+class AdminApp(tk.Tk):
+    def __init__(self):
+        super().__init__()
+        self.manager = CryptoManager()
+        self.title("tinycoin admin panel")
+        self.geometry("350x150")
+
+        tk.Label(self, text="select an action.", pady=10).pack()
+        tk.Button(self, text="create new wallet", command=self.create_wallet).pack(pady=5, padx=20, fill=tk.X)
+        tk.Button(self, text="modify existing wallet", command=self.modify_wallet).pack(pady=5, padx=20, fill=tk.X)
+
+    def create_wallet(self):
+        owner_name = simpledialog.askstring("new wallet", "enter new sibling's name:")
+        if not owner_name: return
+
+        child_password = simpledialog.askstring("new wallet", f"enter a password for {owner_name}:", show='*')
+        if not child_password: return
+        
+        try:
+            initial_balance = simpledialog.askfloat("new wallet", "enter initial balance (e.g., 10.0):")
+            if initial_balance is None: return
+
+            coin = Coin(owner_name, child_password, initial_balance)
+            file_path = filedialog.asksaveasfilename(
+                defaultextension=".coin", initialfile=f"{owner_name.lower().replace(' ', '_')}.coin",
+                filetypes=[("tinycoin files", "*.coin")]
+            )
+            if not file_path: return
+
+            self.manager.write_coin_file(file_path, coin)
+            messagebox.showinfo("done", f"wallet created for {owner_name} at '{file_path}'.")
+        except Exception as e:
+            messagebox.showerror("error", f"failed to create wallet: {e}")
+
+    def modify_wallet(self):
+        file_path =filedialog.askopenfilename(title="select .coin file to modify", filetypes=[("tinycoin files", "*.coin")])
+        if not file_path: return
+
+        
 
 if __name__ == "__main__":
-    #app = AdminApp()
-    #app.mainloop()
+    app = AdminApp()
+    app.mainloop()
