@@ -75,7 +75,30 @@ class AdminApp(tk.Tk):
         file_path =filedialog.askopenfilename(title="select .coin file to modify", filetypes=[("tinycoin files", "*.coin")])
         if not file_path: return
 
+
+        if not file_path: return
+
+        coin = self.manager.read_coin_file(file_path)
+        if not coin:
+            messagebox.showerror("error", "could not read file. it may be corrupted.")
+            return
         
+        dialog = ModifyBalanceDialog(self, f"modify {coin.owner_name}'s wallet", coin.balance)
+        if dialog.result is None: return 
+
+        action, amount = dialog.result
+        log_entry = ""
+        if action == "adjust":
+            coin.balance += amount
+            log_entry = f"[admin] adjustment of {amount:+.2f}. new balance: {coin.balance:.2f}"
+        elif action == "set":
+            coin.balance = amount
+            log_entry = f"[admin] set balance to {amount:.2f}."
+        
+        coin.add_transaction(log_entry)
+        self.manager.write_coin_file(file_path, coin)
+        messagebox.showinfo("success", f"wallet updated successfully.\nnew balance: {coin.balance:.2f}")
+
 
 if __name__ == "__main__":
     app = AdminApp()
