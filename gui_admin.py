@@ -20,4 +20,24 @@ class ModifyBalanceDialog(simpledialog.Dialog):
         self.set_entry.grid(row=2, column=1)
         
         return self.adj_entry
+    def apply(self):
+        adj_val = self.adj_entry.get()
+        set_val = self.set_entry.get()
 
+        try:
+            if adj_val and set_val:
+                messagebox.showwarning("error", "please use either adjustment OR set, not both.", parent=self)
+                return
+            if adj_val:
+                amount = float(adj_val)
+                self.result = ("adjust", amount)
+            elif set_val:
+                amount = float(set_val)
+                self.result = ("set", amount)
+        except ValueError:
+            messagebox.showwarning("error", "please enter a valid number.", parent=self)
+
+
+if __name__ == "__main__":
+    #app = AdminApp()
+    #app.mainloop()
