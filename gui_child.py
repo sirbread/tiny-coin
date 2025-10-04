@@ -1,5 +1,5 @@
 import tkinter as tk
-from tkinter import simpledialog, filedialog, messagebox
+from tkinter import simpledialog, filedialog, messagebox, scrolledtext
 from core_logic import CryptoManager, perform_transfer
 
 class ChildApp(tk.Tk):
@@ -8,9 +8,8 @@ class ChildApp(tk.Tk):
         self.manager = CryptoManager()
         self.current_coin_obj = None
         self.current_file_path = None
-        #hyphen or not
         self.title("tinycoin")
-        self.geometry("350x200")
+        self.geometry("550x410")
         self.login_frame = tk.Frame(self)
         self.wallet_frame = tk.Frame(self)
         self._create_login_widgets()
@@ -29,6 +28,13 @@ class ChildApp(tk.Tk):
         tk.Button(self.wallet_frame, text="transfer coins", command=self.transfer_coins).pack(pady=10, padx=40, fill=tk.X)
         tk.Button(self.wallet_frame, text="log out", command=self.logout).pack(pady=5, padx=40, fill=tk.X)
 
+        self.log_frame = tk.Frame(self.wallet_frame)
+        self.log_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=(10, 5))
+        tk.Label(self.log_frame, text="wallet logs:").pack(anchor="w")
+        self.log_text = scrolledtext.ScrolledText(self.log_frame, height=8, state="disabled", font=("Courier", 9))
+        self.log_text.pack(fill=tk.BOTH, expand=True)
+
+
     def show_login_view(self):
         self.wallet_frame.pack_forget()
         self.login_frame.pack(fill="both", expand=True)
@@ -39,9 +45,23 @@ class ChildApp(tk.Tk):
         self.update_wallet_display()
 
     def update_wallet_display(self):
-        if self.current_coin_obj:
-            self.welcome_label.config(text=f"welcome, {self.current_coin_obj.owner_name}!")
-            self.balance_label.config(text=f"{self.current_coin_obj.balance:.2f} coins")
+        coin = self.current_coin_obj
+        if coin:
+            self.welcome_label.config(text=f"welcome, {coin.owner_name}!")
+            self.balance_label.config(text=f"{coin.balance:.2f} coins")
+            self.update_logs(coin.transaction_log)
+        else:
+            self.welcome_label.config(text="")
+            self.balance_label.config(text="")
+            self.update_logs([])
+
+    def update_logs(self, log_list):
+        self.log_text.config(state="normal")
+        self.log_text.delete(1.0, tk.END)
+        for entry in reversed(log_list[-30:]):
+            self.log_text.insert(tk.END, entry + "\n")
+        self.log_text.config(state="disabled")
+
 
     def login(self):
         file_path = filedialog.askopenfilename(title="select your .coin file", filetypes=[("tinycoin files", "*.coin")])
@@ -61,13 +81,12 @@ class ChildApp(tk.Tk):
         self.current_file_path = None
         self.show_login_view()
 
-#child
     def transfer_coins(self):
         sender_coin = self.current_coin_obj
-        messagebox.showinfo("to recipient", "ask the person you're transferring TO to select THEIR wallet file.")
-        recipient_path = filedialog.askopenfilename(title="select RECIPIENT's .coin file", filetypes=[("tinycoin files", "*.coin")])
+        messagebox.showinfo("recipient's turn", "now, ask the recipient to select THEIR wallet file.")
+        recipient_path = filedialog.askopenfilename(title="select recipient's .coin file", filetypes=[("tinycoin files", "*.coin")])
         if not recipient_path: return
-        recipient_pass = simpledialog.askstring("recipient's password", "ask the person you're transferring TO to enter THEIR password:", show='*')
+        recipient_pass = simpledialog.askstring("recipient's password", "ask the recipient to enter THEIR password to approve:", show='*')
         if not recipient_pass: return
 
         recipient_coin = self.manager.read_coin_file(recipient_path)
@@ -89,6 +108,7 @@ class ChildApp(tk.Tk):
             if success:
                 self.manager.write_coin_file(self.current_file_path, sender_coin)
                 self.manager.write_coin_file(recipient_path, recipient_coin)
+                self.current_coin_obj = sender_coin
                 self.update_wallet_display()
                 messagebox.showinfo("sucesss", message)
             else:

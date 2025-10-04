@@ -1,5 +1,5 @@
 import tkinter as tk
-from tkinter import simpledialog, filedialog, messagebox
+from tkinter import simpledialog, filedialog, messagebox, scrolledtext
 from core_logic import Coin, CryptoManager
 import admin_password_util
 
@@ -71,12 +71,26 @@ class AdminApp(tk.Tk):
     def __init__(self):
         super().__init__()
         self.manager = CryptoManager()
+        self.loaded_coin = None
+        self.loaded_file_path = None
+
         self.title("tinycoin admin panel")
-        self.geometry("350x150")
+        self.geometry("400x350")
         self._require_password()
         tk.Label(self, text="select an action.", pady=10).pack()
         tk.Button(self, text="create new wallet", command=self.create_wallet).pack(pady=5, padx=20, fill=tk.X)
         tk.Button(self, text="modify existing wallet", command=self.modify_wallet).pack(pady=5, padx=20, fill=tk.X)
+
+        self.balance_label = tk.Label(self, text="", font=("Arial", 12, "bold"))
+        self.balance_label.pack(pady=8)
+
+        self.log_frame = tk.Frame(self)
+        self.log_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=(0, 10))
+
+        tk.Label(self.log_frame, text="wallet logs:").pack(anchor="w")
+        self.log_text = scrolledtext.ScrolledText(self.log_frame, height=8, state="disabled", font=("Courier", 9))
+        self.log_text.pack(fill=tk.BOTH, expand=True)
+
 
     def _require_password(self):
         pwd_file = admin_password_util.get_pwd_file_path()
@@ -99,6 +113,22 @@ class AdminApp(tk.Tk):
                 break
             messagebox.showerror("access denied", "invalid password. please try again.")
 
+    def display_wallet(self, coin):
+        if not coin:
+            self.balance_label.config(text="")
+            self.update_logs([])
+        else:
+            self.balance_label.config(text=f"{coin.owner_name}: {coin.balance:.2f} coins")
+            self.update_logs(coin.transaction_log)
+
+    def update_logs(self, log_list):
+        self.log_text.config(state="normal")
+        self.log_text.delete(1.0, tk.END)
+        for entry in reversed(log_list[-30:]):
+            self.log_text.insert(tk.END, entry + "\n")
+        self.log_text.config(state="disabled")
+
+
     def create_wallet(self):
         owner_name = simpledialog.askstring("new wallet", "enter new sibling's name:")
         if not owner_name: return
@@ -119,6 +149,9 @@ class AdminApp(tk.Tk):
 
             self.manager.write_coin_file(file_path, coin)
             messagebox.showinfo("done", f"wallet created for {owner_name} at '{file_path}'.")
+            self.loaded_coin = coin
+            self.loaded_file_path = file_path
+            self.display_wallet(coin)
         except Exception as e:
             messagebox.showerror("error", f"failed to create wallet: {e}")
 
@@ -146,7 +179,9 @@ class AdminApp(tk.Tk):
         coin.add_transaction(log_entry)
         self.manager.write_coin_file(file_path, coin)
         messagebox.showinfo("success", f"wallet updated successfully.\nnew balance: {coin.balance:.2f}")
-
+        self.loaded_coin = coin
+        self.loaded_file_path = file_path
+        self.display_wallet(coin)
 
 if __name__ == "__main__":
     app = AdminApp()
