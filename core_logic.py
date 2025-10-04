@@ -13,7 +13,7 @@ KEY_SIZE = 32
 PBKDF2_ITERATIONS = 100000
 MAC_SIZE = 16
 
-MASTER_PASSWORD = "maybe-the-password-was-the-friends-we-made-along-the-way-betterclient"
+MASTER_PASSWORD = "maybe-the-password-was-the-friends-we-made-along-the-way"
 
 class Coin:
     def __init__(self, owner_name, child_password, initial_balance=0.0):
@@ -22,8 +22,8 @@ class Coin:
         self.child_password_salt = get_random_bytes(SALT_SIZE)
         self.child_password_hash = self._hash_password(child_password, self.child_password_salt)
         self.balance = float(initial_balance)
-        self.transaction_log = [f"{datetime.utcnow().isoformat()} - Wallet created for {owner_name} with balance {self.balance}"]
-
+        now_str = datetime.now().strftime("%Y-%m-%d %H:%M")
+        self.transaction_log = [f"{now_str} - wallet created for {owner_name} with balance {self.balance}"]
     def _hash_password(self, password, salt):
         return SHA256.new(password.encode('utf-8') + salt).digest()
 
@@ -31,7 +31,8 @@ class Coin:
         return self._hash_password(password_attempt, self.child_password_salt) == self.child_password_hash
 
     def add_transaction(self, entry):
-        self.transaction_log.append(f"{datetime.utcnow().isoformat()} - {entry}")
+        now_str = datetime.now().strftime("%Y-%m-%d %H:%M")
+        self.transaction_log.append(f"{now_str} - {entry}")
 
     def __str__(self):
         log_entries = self.transaction_log[-5:]
