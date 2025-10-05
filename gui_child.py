@@ -66,15 +66,24 @@ class ChildApp(tk.Tk):
     def login(self):
         file_path = filedialog.askopenfilename(title="select your .coin file", filetypes=[("tinycoin files", "*.coin")])
         if not file_path: return
-        password = simpledialog.askstring("password", "enter your password:", show='*')
-        if not password: return
+
         coin = self.manager.read_coin_file(file_path)
-        if coin and coin.verify_child_password(password):
-            self.current_coin_obj = coin
-            self.current_file_path = file_path
-            self.show_wallet_view()
-        else:
-            messagebox.showerror("login failed", "wallet coundn't be opened, check your password.")
+        if not coin:
+            messagebox.showerror("error", "could not read file. it may be corrupted or not a valid wallet file.")
+            return
+
+        while True:
+            password = simpledialog.askstring("password", f"enter password for {coin.owner_name}:", show='*')
+            if not password:
+                return
+
+            if coin.verify_child_password(password):
+                self.current_coin_obj = coin
+                self.current_file_path = file_path
+                self.show_wallet_view()
+                break
+            else:
+                messagebox.showerror("login failed", "incorrect password. please try again.")
 
     def logout(self):
         self.current_coin_obj = None
@@ -84,20 +93,28 @@ class ChildApp(tk.Tk):
     def transfer_coins(self):
         sender_coin = self.current_coin_obj
         messagebox.showinfo("recipient's turn", "now, ask the recipient to select THEIR wallet file.")
+        
         recipient_path = filedialog.askopenfilename(title="select recipient's .coin file", filetypes=[("tinycoin files", "*.coin")])
         if not recipient_path: return
-        recipient_pass = simpledialog.askstring("recipient's password", "ask the recipient to enter THEIR password to approve:", show='*')
-        if not recipient_pass: return
 
         recipient_coin = self.manager.read_coin_file(recipient_path)
-        if not (recipient_coin and recipient_coin.verify_child_password(recipient_pass)):
-            messagebox.showerror("error", "recipient wallet couldn't be opened, check password.")
+        if not (recipient_coin):
+            messagebox.showerror("error", "recipient wallet couldn't be opened.")
             return
 
         if sender_coin.file_id == recipient_coin.file_id:
             messagebox.showwarning("error", "good thinking, but you cannot transfer coins to your own wallet.")
             return
 
+        while True:
+            recipient_pass = simpledialog.askstring("recipient's password", f"ask {recipient_coin.owner_name} to enter THEIR password to approve:", show='*')
+            if not recipient_pass:
+                return
+
+            if recipient_coin.verify_child_password(recipient_pass):
+                break
+            else:
+                messagebox.showerror("error", "incorrect password for recipient. please try again.")
         try:
             amount = simpledialog.askfloat("transfer amount", f"your balance: {sender_coin.balance:.2f}\nenter amount to transfer to {recipient_coin.owner_name}:")
             if amount is None or amount <= 0:
