@@ -2,6 +2,7 @@ import tkinter as tk
 from tkinter import simpledialog, filedialog, messagebox, scrolledtext
 from core_logic import Coin, CryptoManager
 import admin_password_util
+import time
 
 class AdminPasswordDialog(simpledialog.Dialog):
     def __init__(self, parent, is_new):
@@ -73,10 +74,20 @@ class AdminApp(tk.Tk):
         self.manager = CryptoManager()
         self.loaded_coin = None
         self.loaded_file_path = None
+        self.failed_attempts = 0
+        self.lockout_duration = 15 * 60 #15 mins adjust if needed
+        self.max_failed_attempts = 5
 
         self.title("tinycoin admin panel")
         self.geometry("550x350")
-        self._require_password()
+
+        self.withdraw()
+
+        if not self._require_password():
+            self.destroy()
+            return
+
+        self.deiconify()
 
         self.login_frame = tk.Frame(self)
         tk.Label(self.login_frame, text="welcome!", font=("Arial", 14)).pack(pady=20)
@@ -113,12 +124,36 @@ class AdminApp(tk.Tk):
                         "the password has been saved to a hidden file in the same directory as this executable.\n"
                         "moving this executable resets the password. deleting the file allows a new password to be set. careful!")
                     break
+        
+        lockout_time = admin_password_util.get_lockout_time()
+        if lockout_time:
+            remaining_time = int(self.lockout_duration - (time.time() - lockout_time))
+            if remaining_time > 0:
+                minutes, seconds = divmod(remaining_time, 60)
+                messagebox.showerror("locked out", f"too many failed attempts. please wait {minutes}m {seconds}s.")
+                return False
+            else:
+                admin_password_util.clear_lockout()
+
         while True:
             dialog = AdminPasswordDialog(self, is_new=False)
             pw = dialog.result
             if pw and admin_password_util.check_password(pw, pwd_file):
-                break
-            messagebox.showerror("access denied", "invalid password. please try again.")
+                self.failed_attempts = 0
+                admin_password_util.clear_lockout()
+                return True
+
+            self.failed_attempts += 1
+            remaining_attempts = self.max_failed_attempts - self.failed_attempts
+
+            if self.failed_attempts >= self.max_failed_attempts:
+                admin_password_util.set_lockout()
+                messagebox.showerror("access denied", "too many failed attempts. the application will now close. please wait 15 minutes.")
+                return False
+            elif pw is None:
+                return False
+            else:
+                 messagebox.showerror("access denied", f"invalid password. {remaining_attempts} attempts remaining.")
 
     def show_login_view(self):
         self.wallet_frame.pack_forget()
@@ -215,4 +250,5 @@ class AdminApp(tk.Tk):
 
 if __name__ == "__main__":
     app = AdminApp()
-    app.mainloop()
+    if app.winfo_exists():
+        app.mainloop()

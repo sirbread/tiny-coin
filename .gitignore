@@ -1,2 +1,3 @@
 __pycache__/
 .admin_pwd
+.admin_failed_log
