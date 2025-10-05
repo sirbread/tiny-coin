@@ -2,6 +2,32 @@ import tkinter as tk
 from tkinter import simpledialog, filedialog, messagebox, scrolledtext
 from core_logic import CryptoManager, perform_transfer
 
+class ChangePasswordDialog(simpledialog.Dialog):
+    def __init__(self, parent):
+        super().__init__(parent, "change password")
+
+    def body(self, master):
+        tk.Label(master, text="current password:").grid(row=0, sticky="w")
+        self.old_pw_entry = tk.Entry(master, show='*')
+        self.old_pw_entry.grid(row=0, column=1, padx=5, pady=2)
+
+        tk.Label(master, text="new password:").grid(row=1, sticky="w")
+        self.new_pw1_entry = tk.Entry(master, show='*')
+        self.new_pw1_entry.grid(row=1, column=1, padx=5, pady=2)
+
+        tk.Label(master, text="confirm new password:").grid(row=2, sticky="w")
+        self.new_pw2_entry = tk.Entry(master, show='*')
+        self.new_pw2_entry.grid(row=2, column=1, padx=5, pady=2)
+
+        return self.old_pw_entry
+
+    def apply(self):
+        self.result = (
+            self.old_pw_entry.get(),
+            self.new_pw1_entry.get(),
+            self.new_pw2_entry.get()
+        )
+
 class ChildApp(tk.Tk):
     def __init__(self):
         super().__init__()
@@ -25,8 +51,13 @@ class ChildApp(tk.Tk):
         self.welcome_label.pack(pady=10)
         self.balance_label = tk.Label(self.wallet_frame, text="", font=("Arial", 18, "bold"))
         self.balance_label.pack(pady=5)
-        tk.Button(self.wallet_frame, text="transfer coins", command=self.transfer_coins).pack(pady=10, padx=40, fill=tk.X)
-        tk.Button(self.wallet_frame, text="log out", command=self.logout).pack(pady=5, padx=40, fill=tk.X)
+
+        button_frame = tk.Frame(self.wallet_frame)
+        button_frame.pack(fill=tk.X, padx=40)
+
+        tk.Button(button_frame, text="transfer coins", command=self.transfer_coins).pack(pady=5, fill=tk.X)
+        tk.Button(button_frame, text="change password", command=self.change_password).pack(pady=5, fill=tk.X)
+        tk.Button(button_frame, text="log out", command=self.logout).pack(pady=5, fill=tk.X)
 
         self.log_frame = tk.Frame(self.wallet_frame)
         self.log_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=(10, 5))
@@ -89,6 +120,30 @@ class ChildApp(tk.Tk):
         self.current_coin_obj = None
         self.current_file_path = None
         self.show_login_view()
+
+    def change_password(self):
+        dialog = ChangePasswordDialog(self)
+        if not dialog.result:
+            return
+
+        old_pw, new_pw1, new_pw2 = dialog.result
+
+        if not self.current_coin_obj.verify_child_password(old_pw):
+            messagebox.showerror("error", "current password is not correct.", parent=self)
+            return
+
+        if len(new_pw1) < 4:
+            messagebox.showerror("error", "new password must be at least 4 characters long.", parent=self)
+            return
+
+        if new_pw1 != new_pw2:
+            messagebox.showerror("error", "new passwords do not match.", parent=self)
+            return
+
+        self.current_coin_obj.update_password(new_pw1)
+        self.manager.write_coin_file(self.current_file_path, self.current_coin_obj)
+        self.update_logs(self.current_coin_obj.transaction_log)
+        messagebox.showinfo("success", "your password has been changed successfully.")
 
     def transfer_coins(self):
         sender_coin = self.current_coin_obj

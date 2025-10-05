@@ -30,6 +30,11 @@ class Coin:
     def verify_child_password(self, password_attempt):
         return self._hash_password(password_attempt, self.child_password_salt) == self.child_password_hash
 
+    def update_password(self, new_password): 
+        self.child_password_salt = get_random_bytes(SALT_SIZE)
+        self.child_password_hash = self._hash_password(new_password, self.child_password_salt)
+        #self.add_transaction("password changed.")
+
     def add_transaction(self, entry):
         now_str = datetime.now().strftime("%Y-%m-%d %H:%M")
         self.transaction_log.append(f"{now_str} - {entry}")

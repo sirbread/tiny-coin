@@ -33,6 +33,29 @@ class AdminPasswordDialog(simpledialog.Dialog):
         else:
             self.result = self.pw_entry.get()
 
+class AdminChangePasswordDialog(simpledialog.Dialog):
+    def __init__(self, parent, owner_name):
+        self.owner_name = owner_name
+        super().__init__(parent, f"reset password for {owner_name}")
+
+    def body(self, master):
+        tk.Label(master, text="new password:").grid(row=0, sticky="w")
+        self.new_pw1_entry = tk.Entry(master, show='*')
+        self.new_pw1_entry.grid(row=0, column=1, padx=5, pady=2)
+
+        tk.Label(master, text="confirm new password:").grid(row=1, sticky="w")
+        self.new_pw2_entry = tk.Entry(master, show='*')
+        self.new_pw2_entry.grid(row=1, column=1, padx=5, pady=2)
+
+        return self.new_pw1_entry
+
+    def apply(self):
+        self.result = (
+            self.new_pw1_entry.get(),
+            self.new_pw2_entry.get()
+        )
+
+
 class ModifyBalanceDialog(simpledialog.Dialog):
     def __init__(self, parent, title, current_balance):
         self.current_balance = current_balance
@@ -77,6 +100,7 @@ class AdminApp(tk.Tk):
         self.failed_attempts = 0
         self.lockout_duration = 15 * 60 #15 mins adjust if needed
         self.max_failed_attempts = 5
+        self.is_destroyed_by_logic = False
 
         self.title("tinycoin admin panel")
         self.geometry("550x350")
@@ -84,6 +108,7 @@ class AdminApp(tk.Tk):
         self.withdraw()
 
         if not self._require_password():
+            self.is_destroyed_by_logic = True
             self.destroy()
             return
 
@@ -99,6 +124,7 @@ class AdminApp(tk.Tk):
         self.balance_label.pack(pady=8)
 
         tk.Button(self.wallet_frame, text="modify balance", command=self.modify_wallet).pack(pady=4, padx=20, fill=tk.X)
+        tk.Button(self.wallet_frame, text="change wallet password", command=self.admin_change_password).pack(pady=4, padx=20, fill=tk.X)
         tk.Button(self.wallet_frame, text="close wallet", command=self.close_wallet).pack(pady=4, padx=20, fill=tk.X)
 
         self.log_frame = tk.Frame(self.wallet_frame)
@@ -245,10 +271,33 @@ class AdminApp(tk.Tk):
 
         self.display_wallet(coin)
 
+    def admin_change_password(self):
+        if not self.loaded_coin: return
+
+        dialog = AdminChangePasswordDialog(self, self.loaded_coin.owner_name)
+        if not dialog.result: return
+
+        new_pw1, new_pw2 = dialog.result
+
+        if len(new_pw1) < 4:
+            messagebox.showerror("error", "new password must be at least 4 characters long.", parent=self)
+            return
+
+        if new_pw1 != new_pw2:
+            messagebox.showerror("error", "new passwords do not match.", parent=self)
+            return
+
+        self.loaded_coin.update_password(new_pw1)
+        self.loaded_coin.add_transaction("[admin] password was reset by admin.")
+        self.manager.write_coin_file(self.loaded_file_path, self.loaded_coin)
+        self.update_logs(self.loaded_coin.transaction_log)
+        messagebox.showinfo("success", f"password for {self.loaded_coin.owner_name} has been reset.")
+
+
     def close_wallet(self):
         self.show_login_view()
 
 if __name__ == "__main__":
     app = AdminApp()
-    if app.winfo_exists():
+    if not app.is_destroyed_by_logic:
         app.mainloop()
