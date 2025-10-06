@@ -96,8 +96,9 @@ class ChildApp(QMainWindow):
         self.welcome_label = QLabel("")
         self.welcome_label.setFont(QFont("Arial", 14))
         self.welcome_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        layout.addSpacing(14)
         layout.addWidget(self.welcome_label)
-
+        layout.addSpacing(14)
         self.balance_label = QLabel("")
         self.balance_label.setFont(QFont("Arial", 18, QFont.Weight.Bold))
         self.balance_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
