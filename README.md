@@ -1,10 +1,25 @@
-# tiny-coin
-todo
-- make real gui (pyqt6)
-- export transaction history
-- freeze wallet
-- ~~admin panel password~~
-- ~~if invalid password, bring back to password menu without restarting~~
-- ~~password attempt lockout~~
-- ~~show logs properly in both admin and child panel~~
-- ~~change wallet pwds~~
+### tinycoin
+
+a simple, local wallet system meant for siblings.
+meant as a currency system used within a family without any tangible money involved.
+
+## featutes
+- every wallet assigned to a sibling is a `.coin` file they keep where they want (ie a flash drive they carry)
+- send coins to other wallets: select your wallet, then theirs, transfer, and done.
+- password protected wallets with logs for all actions
+- admin panel to adjust balances, reset passwords, etc
+- no central server needed
+
+## run ts
+you know the drill
+1. clone thy repo
+2. install requirements.txt
+3. cd to the repo, then run gui_child.py for the child panel, and gui_admin.py for the admin panel.
+
+## some info
+- if you lose your wallet file, it's gone. no recovery.
+- admin password is local and not synced or stored anywhere else.
+- moving or deleting the admin password file and/or moving the executable removes the admin password. careful!
+
+## boring stuff
+- AI _was_ used this time, although not much, to assist the GUI lib migration from tk to pyqt. 
