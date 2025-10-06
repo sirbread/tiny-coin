@@ -1,4 +1,4 @@
-### tinycoin
+tinycoin
 
 a simple, local wallet system meant for siblings.
 meant as a currency system used within a family without any tangible money involved.
