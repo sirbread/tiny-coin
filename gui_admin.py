@@ -80,7 +80,7 @@ class ModifyBalanceDialog(QDialog):
         self.setWindowTitle(title)
         
         layout = QFormLayout(self)
-        layout.addRow(f"current balance: {current_balance:.2f}")
+        layout.addRow(QLabel(f"current balance: {current_balance:.2f}"))
 
         self.adj_entry = QLineEdit(self)
         layout.addRow("adjustment (+/-):", self.adj_entry)
