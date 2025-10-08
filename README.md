@@ -3,6 +3,8 @@
 a simple, local wallet system meant for siblings.
 meant as a currency system used within a family without any tangible money involved.
 
+[![demo!!]()](https://github.com/sirbread/tiny-coin/raw/refs/heads/main/2025-10-07%2000-17-29.mp4)
+
 ## featutes
 - every wallet assigned to a sibling is a `.coin` file they keep where they want (ie a flash drive they carry)
 - send coins to other wallets: select your wallet, then theirs, transfer, and done.
